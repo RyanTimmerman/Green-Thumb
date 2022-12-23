@@ -1,4 +1,6 @@
 //***********************************************************************//
+//Name: Green Thumb
+//Version: 1.0.0
 //Author: Ryan Timmerman
 //Date: 12/22/2022
 //Description: This script is designed to automate an indoor plant biome.
