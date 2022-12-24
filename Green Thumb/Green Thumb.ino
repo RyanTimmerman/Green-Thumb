@@ -6,8 +6,8 @@
 //Description: This script is designed to automate an indoor plant biome.
 //***********************************************************************//
 
-// #include <Wire.h>
-// #include "ACROBOTIC_SSD1306.h"
+#include <Wire.h>
+#include "ACROBOTIC_SSD1306.h"
 #include "DHT.h"
 
 #define DHTPIN A0
@@ -24,19 +24,19 @@ void setup() {
   pinMode(fanRelay, OUTPUT);
   pinMode(humidifierRelay, OUTPUT);
 
-  // setupDisplay();
+  setupDisplay();
   dht.begin();  //initiate humid/temp sensor
 
   initializeTestSequence();
 }
 
-// void setupDisplay() {
-//   Wire.begin();
-//   oled.init();           // Initialze SSD1306 OLED display
-//   oled.clearDisplay();   // Clear screen
-//   oled.setTextXY(0, 0);  // Set cursor position, start of line 0
-//   oled.putString("Green Thumb 1.0");
-// }
+void setupDisplay() {
+  Wire.begin();
+  oled.init();           // Initialze SSD1306 OLED display
+  oled.clearDisplay();   // Clear screen
+  oled.setTextXY(0, 0);  // Set cursor position, start of line 0
+  oled.putString("Green Thumb 1.0");
+}
 
 void loop() {
 
@@ -75,6 +75,8 @@ void loop() {
 }
 
 void initializeTestSequence() {
+  Serial.println("");
+  Serial.println("*************************************************");
   Serial.println("Green Thumb 1.0 Starting..");
 
   //turn relays on for 3 seconds w/ .25s between relays
@@ -91,20 +93,20 @@ void initializeTestSequence() {
 
 void updateDisplay(float humidity, float tempC) {
   String tempString = "Temp: " + String((float)(1.8 * tempC + 32)) + " F";
-  //   int tempString_len = tempString.length() + 1;  // Length (with one extra character for the null terminator)
-  //   char temp_char_array[tempString_len];
-  //   tempString.toCharArray(temp_char_array, tempString_len);
+  int tempString_len = tempString.length() + 1;  // Length (with one extra character for the null terminator)
+  char temp_char_array[tempString_len];
+  tempString.toCharArray(temp_char_array, tempString_len);
 
   String humidString = "Humidity: " + String(humidity) + "%";
-  //   int humidString_len = humidString.length() + 1;  // Length (with one extra character for the null terminator)
-  //   char humid_char_array[humidString_len];
-  //   humidString.toCharArray(humid_char_array, humidString_len);
+  int humidString_len = humidString.length() + 1;  // Length (with one extra character for the null terminator)
+  char humid_char_array[humidString_len];
+  humidString.toCharArray(humid_char_array, humidString_len);
 
   Serial.println(tempString + "       " + humidString);
 
-  //   oled.setTextXY(1, 0);
-  //   oled.putString(temp_char_array);
+  oled.setTextXY(3, 0);
+  oled.putString(temp_char_array);
 
-  //   oled.setTextXY(2, 0);
-  //   oled.putString(humid_char_array);
+  oled.setTextXY(4, 0);
+  oled.putString(humid_char_array);
 }
