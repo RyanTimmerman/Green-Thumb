@@ -45,6 +45,7 @@ void setupDisplay() {
   }
   delay(2000);
   display.clearDisplay();
+  delay(1000);
   display.setTextColor(WHITE);
   display.setTextSize(2);
   display.setCursor(0,0);
@@ -107,14 +108,18 @@ void updateDisplay(int humidity, int tempC) {
 
   Serial.println(tempString + "       " + humidString);
 
+  
+  display.clearDisplay();
+  delay(500);
+  display.setCursor(0,0);
+  display.println("GreenThumb");
   display.setCursor(0,25);
   display.println(temp_char_array);
   display.setCursor(10,45);
   display.println(humid_char_array);
   display.invertDisplay(true);
   display.display();
-  delay(1000);
-
+  delay(500);
   display.invertDisplay(false);
   delay(1000);
 }
