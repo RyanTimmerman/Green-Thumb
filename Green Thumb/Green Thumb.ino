@@ -19,23 +19,27 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
 #define DHTPIN A0
 #define DHTTYPE DHT11
 
-// #define fanRelay 2
-// #define humidifierRelay 4
+#define humidifierRelay 2
+#define fanRelay 4
 
 DHT dht(DHTPIN, DHTTYPE);
+int loopCtr = 0;
 
 void setup() {
 
   Serial.begin(115200);
 
-  // pinMode(fanRelay, OUTPUT);
-  // pinMode(humidifierRelay, OUTPUT);
+  pinMode(fanRelay, OUTPUT);
+  pinMode(humidifierRelay, OUTPUT);
+  
+  digitalWrite(fanRelay, HIGH); //turn relay off
+  digitalWrite(humidifierRelay, HIGH); //turn relay off
 
   setupDisplay();
 
   dht.begin();  //initiate humid/temp sensor
 
-  // initializeTestSequence();
+  initializeTestSequence();
 }
 
 void setupDisplay() {
@@ -50,8 +54,9 @@ void setupDisplay() {
   display.setTextSize(2);
   display.setCursor(0,0);
   display.println("GreenThumb");
+  display.setCursor(0,25);
+  display.println("starting..");
   display.display();
-  display.setTextSize(2);
 }
 
 void loop() {
@@ -61,56 +66,63 @@ void loop() {
 
   updateDisplay(humid, tempC);
 
-  // if (humid < 80) {
-  //   //turn fan and humidifer on for 10 seconds
-  //   Serial.println("LOW HUMIDITY: Powering on fan and humidifier..");
+  if (humid < 80) {
+    Serial.println("LOW HUMIDITY: Powering on humidifier..");
+    digitalWrite(humidifierRelay, LOW); //turn humidifer relay on
+    delay(10000); //wait 10 seconds
+    digitalWrite(humidifierRelay, HIGH);  //turn humidifer relay off
+  }
 
-  //   digitalWrite(fanRelay, LOW);
-  //   digitalWrite(humidifierRelay, LOW);
+  if (loopCtr >= 6 ){
+    Serial.println("FRESH AIR: Power on fans..");
+    digitalWrite(fanRelay, LOW); //turn fan relay on
+    delay(30000); //wait 30 seconds
+    digitalWrite(fanRelay, HIGH); //turn fan relay off
+    loopCtr = 0;
+  }
 
-  //   delay(10000);
-
-  //   digitalWrite(fanRelay, HIGH);         //turn relays off
-  //   digitalWrite(humidifierRelay, HIGH);  //turn humidifer relay off
-  // }
+  loopCtr++;
 
   //wait 10 sec before looping
   delay(10000);
 }
 
-// void initializeTestSequence() {
-//   Serial.println("");
-//   Serial.println("*************************************************");
-//   Serial.println("Green Thumb 1.0 Starting..");
+void initializeTestSequence() {
+  Serial.println("");
+  Serial.println("*************************************************");
+  Serial.println("Green Thumb 1.0 Starting..");
+  
+  //turn fans on for 5 seconds
+  Serial.println("testing fans..");
+  digitalWrite(fanRelay, LOW); //turn fan relay on
+  delay(5000);
+  digitalWrite(fanRelay, HIGH);  //turn fan relay off
+  delay(250);
 
-//   //turn relays on for 3 seconds w/ .25s between relays
-//   digitalWrite(fanRelay, LOW);
-//   delay(250);
-//   digitalWrite(humidifierRelay, LOW);
-
-//   delay(3000);  //wait 3 seconds
-
-//   digitalWrite(fanRelay, HIGH);  //turn relays off
-//   delay(250);
-//   digitalWrite(humidifierRelay, HIGH);  //turn humidifer relay off
-// }
+  //turn humidifier on for 5 seconds
+  Serial.println("testing humidifier..");
+  digitalWrite(humidifierRelay, LOW); //turn humidifer relay on
+  delay(10000);  //wait 3 seconds
+  digitalWrite(humidifierRelay, HIGH);  //turn humidifer relay off
+  delay(250);
+}
 
 void updateDisplay(int humidity, int tempC) {
   String tempString = "TEMP " + String((int)(1.8 * tempC + 32)) + "F";
+  String humidString = "RH: " + String(humidity) + "%";
+  Serial.println(tempString + "    " + humidString);
+
   int tempString_len = tempString.length() + 1;  // Length (with one extra character for the null terminator)
   char temp_char_array[tempString_len];
   tempString.toCharArray(temp_char_array, tempString_len);
 
-  String humidString = "RH: " + String(humidity) + "%";
   int humidString_len = humidString.length() + 1;  // Length (with one extra character for the null terminator)
   char humid_char_array[humidString_len];
   humidString.toCharArray(humid_char_array, humidString_len);
 
-  Serial.println(tempString + "       " + humidString);
-
-  
   display.clearDisplay();
-  delay(500);
+  delay(250);
+  
   display.setCursor(0,0);
   display.println("GreenThumb");
   display.setCursor(0,25);
@@ -121,5 +133,5 @@ void updateDisplay(int humidity, int tempC) {
   display.display();
   delay(500);
   display.invertDisplay(false);
-  delay(1000);
+  delay(500);
 }
