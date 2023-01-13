@@ -31,9 +31,9 @@ void setup() {
 
   pinMode(fanRelay, OUTPUT);
   pinMode(humidifierRelay, OUTPUT);
-  
-  digitalWrite(fanRelay, HIGH); //turn relay off
-  digitalWrite(humidifierRelay, HIGH); //turn relay off
+
+  digitalWrite(fanRelay, HIGH);         //turn relay off
+  digitalWrite(humidifierRelay, HIGH);  //turn relay off
 
   setupDisplay();
 
@@ -43,21 +43,23 @@ void setup() {
 }
 
 void setupDisplay() {
-  if(!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) { // Address 0x3D for 128x64
+  if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {  // Address 0x3D for 128x64
     Serial.println(F("SSD1306 allocation failed"));
-    for(;;);
+    for (;;)
+      ;
   }
-  delay(2000);
+  delay(250);
   display.clearDisplay();
-  delay(1000);
+  delay(250);
   display.setTextColor(WHITE);
   display.setTextSize(2);
-  display.setCursor(0,0);
+  display.setCursor(0, 0);
   display.println("GreenThumb");
-  display.setCursor(0,25);
+  display.setCursor(0, 25);
   display.println("starting..");
   display.display();
 }
+
 
 void loop() {
 
@@ -66,43 +68,40 @@ void loop() {
 
   updateDisplay(humid, tempC);
 
+  //If RH is lower than 80% trigger humidfier
   if (humid < 80) {
-    Serial.println("LOW HUMIDITY: Powering on humidifier..");
-    digitalWrite(humidifierRelay, LOW); //turn humidifer relay on
-    delay(10000); //wait 10 seconds
-    digitalWrite(humidifierRelay, HIGH);  //turn humidifer relay off
+    humidfy();
   }
 
-  if (loopCtr >= 6 ){
-    Serial.println("FRESH AIR: Power on fans..");
-    digitalWrite(fanRelay, LOW); //turn fan relay on
-    delay(30000); //wait 30 seconds
-    digitalWrite(fanRelay, HIGH); //turn fan relay off
-    loopCtr = 0;
+  //every 60 loops (roughly 30minutes + 40.5 seconds x times humidifer triggered)
+  //Turn on the external fans for fresh air exchange
+  if (loopCtr >= 60) {
+    exchangeFreshAir();
+    loopCtr = 0;  // reset the counter
   }
 
-  loopCtr++;
+  loopCtr++;  //add 1 to the counter
 
-  //wait 10 sec before looping
-  delay(10000);
+  //wait 30 seconds before looping
+  delay(30000);
 }
 
 void initializeTestSequence() {
   Serial.println("");
   Serial.println("*************************************************");
   Serial.println("Green Thumb 1.0 Starting..");
-  
-  //turn fans on for 5 seconds
+
+  //turn fans on for 10 seconds
   Serial.println("testing fans..");
-  digitalWrite(fanRelay, LOW); //turn fan relay on
-  delay(5000);
+  digitalWrite(fanRelay, LOW);   //turn fan relay on
+  delay(10000);                  //wait 10 seconds
   digitalWrite(fanRelay, HIGH);  //turn fan relay off
   delay(250);
 
-  //turn humidifier on for 5 seconds
+  //turn humidifier on for 10 seconds
   Serial.println("testing humidifier..");
-  digitalWrite(humidifierRelay, LOW); //turn humidifer relay on
-  delay(10000);  //wait 3 seconds
+  digitalWrite(humidifierRelay, LOW);   //turn humidifer relay on
+  delay(10000);                         //wait 10 seconds
   digitalWrite(humidifierRelay, HIGH);  //turn humidifer relay off
   delay(250);
 }
@@ -121,17 +120,36 @@ void updateDisplay(int humidity, int tempC) {
   humidString.toCharArray(humid_char_array, humidString_len);
 
   display.clearDisplay();
-  delay(250);
-  
-  display.setCursor(0,0);
+  display.setCursor(0, 0);
   display.println("GreenThumb");
-  display.setCursor(0,25);
+  display.setCursor(0, 25);
   display.println(temp_char_array);
-  display.setCursor(10,45);
+  display.setCursor(10, 45);
   display.println(humid_char_array);
   display.invertDisplay(true);
   display.display();
   delay(500);
   display.invertDisplay(false);
   delay(500);
+}
+
+void humidfy() {
+  Serial.println("LOW HUMIDITY: Powering on humidifier..");
+  digitalWrite(humidifierRelay, LOW);   //turn humidifer relay on
+  delay(30000);                         //wait 30 seconds
+  digitalWrite(humidifierRelay, HIGH);  //turn humidifer relay off
+  delay(250);
+
+  //turn the external fans on distrubute moisture evenly
+  digitalWrite(fanRelay, LOW);   //turn fan relay on
+  delay(10000);                  //wait 10 seconds
+  digitalWrite(fanRelay, HIGH);  //turn fan relay off
+  delay(250);
+}
+
+void exchangeFreshAir() {
+  Serial.println("FRESH AIR: Power on fans..");
+  digitalWrite(fanRelay, LOW);   //turn fan relay on
+  delay(60000);                  //wait 60 seconds
+  digitalWrite(fanRelay, HIGH);  //turn fan relay off
 }
