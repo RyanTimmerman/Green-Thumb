@@ -1,6 +1,6 @@
 //***********************************************************************//
 //Name: Green Thumb
-//Version: 1.0.0
+//Version: 1.1.0
 //Author: Ryan Timmerman
 //Date: 12/22/2022
 //Description: This script is designed to automate an indoor plant biome.
@@ -73,7 +73,7 @@ void loop() {
     humidfy();
   }
 
-  //every 60 loops (roughly 30minutes + 40.5 seconds x times humidifer triggered)
+  //every 60 loops (2mins x times humidifer triggered + 30 minutes)
   //Turn on the external fans for fresh air exchange
   if (loopCtr >= 60) {
     exchangeFreshAir();
@@ -136,15 +136,15 @@ void updateDisplay(int humidity, int tempC) {
 void humidfy() {
   Serial.println("LOW HUMIDITY: Powering on humidifier..");
   digitalWrite(humidifierRelay, LOW);   //turn humidifer relay on
-  delay(30000);                         //wait 30 seconds
+  delay(120000);                         //wait 120 seconds (2mins)
   digitalWrite(humidifierRelay, HIGH);  //turn humidifer relay off
   delay(250);
 
-  //turn the external fans on distrubute moisture evenly
-  digitalWrite(fanRelay, LOW);   //turn fan relay on
-  delay(10000);                  //wait 10 seconds
-  digitalWrite(fanRelay, HIGH);  //turn fan relay off
-  delay(250);
+  // //turn the external fans on distrubute moisture evenly
+  // digitalWrite(fanRelay, LOW);   //turn fan relay on
+  // delay(10000);                  //wait 10 seconds
+  // digitalWrite(fanRelay, HIGH);  //turn fan relay off
+  // delay(250);
 }
 
 void exchangeFreshAir() {
