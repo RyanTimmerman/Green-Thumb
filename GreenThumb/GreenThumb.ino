@@ -76,22 +76,26 @@ void setupDisplay() {
 
 
 void loop() {
+  sgp.measureAirQuality();
 
   float humid = dht.readHumidity();
   float tempC = dht.readTemperature();
+  float cO2 = sgp.CO2;
+  float tVOC = sgp.TVOC;
 
-  sgp.measureAirQuality();
-  Serial.print("CO2: ");
-  Serial.print(sgp.CO2);
-  Serial.print(" ppm\tTVOC: ");
-  Serial.print(sgp.TVOC);
-  Serial.print(" ppb\t");
-  Serial.print("RH: ");
-  Serial.print(humid);
-  Serial.print("TEMP: ");
-  Serial.println(tempC);
+  // Serial.print("CO2: ");
+  // Serial.print(cO2);
+  // Serial.print(" ppm\tTVOC: ");
+  // Serial.print(tVOC);
+  // Serial.print(" ppb\t");
+  // Serial.print("RH: ");
+  // Serial.print(humid);
+  // Serial.print("TEMP: ");
+  // Serial.println(tempC);
 
-  updateDisplay(humid, tempC);
+  delay(1000);
+
+  updateDisplay(humid, tempC, cO2, tVOC);
 
   // //If RH is lower than 85% trigger humidfier
   // // if (humid < 85) {
@@ -110,25 +114,25 @@ void loop() {
   // // //wait 30 seconds before looping
   // // delay(30000);
 
-  delay(3000);
+  delay(1000);
   loopCtr++;
 }
 
 
 void initializeTestSequence() {
-  Serial.println("");
-  Serial.println("*************************************************");
+  // Serial.println("");
+  // Serial.println("*************************************************");
   Serial.println("Green Thumb 1.0 Starting..");
 
   //turn fans on for 10 seconds
-  Serial.println("testing fans..");
+  // Serial.println("testing fans..");
   // digitalWrite(fanRelay, LOW);   //turn fan relay on
   // delay(10000);                  //wait 10 seconds
   // digitalWrite(fanRelay, HIGH);  //turn fan relay off
   // delay(250);
 
   // //turn humidifier on for 10 seconds
-  Serial.println("testing humidifier..");
+  // Serial.println("testing humidifier..");
   // digitalWrite(humidifierRelay, LOW);   //turn humidifer relay on
   // delay(10000);                         //wait 10 seconds
   // digitalWrite(humidifierRelay, HIGH);  //turn humidifer relay off
@@ -137,27 +141,48 @@ void initializeTestSequence() {
   delay(1000);
 }
 
-void updateDisplay(int humidity, int tempC) {
-  String airQualityString = "co2:" + String(sgp.CO2) + "ppm" + "   " + "voc:" + String(sgp.TVOC);
-  String tempString = "TEMP " + String((int)(1.8 * tempC + 32)) + "F";
+void updateDisplay(int humidity, int tempC, int co2, int tvoc) {
+  
+  int tempF = 1.8 * tempC + 32;
+  String tempString1 = "TEMP ";
+  String tempString2 = String(tempF);
+  String tempString3 = "F";
+
+  String finalTempString = tempString1 + tempString2 + tempString3;
+
   String humidString = "RH: " + String(humidity) + "%";
-  Serial.println("Temp:" + tempString + "    RH:" + humidString + "    aq:" + airQualityString);  //+ airQualityString);
 
-  int airQualityString_len = airQualityString.length() + 1; // Length (with one extra character for the null terminator)
-  char aq_char_array[airQualityString_len];
-  airQualityString.toCharArray(aq_char_array, airQualityString_len);
+  Serial.println(finalTempString);
+  Serial.println(humidString);
 
-  int tempString_len = tempString.length() + 1;  // Length (with one extra character for the null terminator)
+  // Serial.println("Temp:" + tempString + "    RH:" + humidString);  //+ airQualityString);
+
+
+  // int airQualityString_len = airQualityString.length() + 1; // Length (with one extra character for the null terminator)
+  // char aq_char_array[airQualityString_len];
+  // airQualityString.toCharArray(aq_char_array, airQualityString_len);
+
+  int tempString_len = finalTempString.length() + 1;  // Length (with one extra character for the null terminator)
   char temp_char_array[tempString_len];
-  tempString.toCharArray(temp_char_array, tempString_len);
+  finalTempString.toCharArray(temp_char_array, tempString_len);
 
   int humidString_len = humidString.length() + 1;  // Length (with one extra character for the null terminator)
   char humid_char_array[humidString_len];
   humidString.toCharArray(humid_char_array, humidString_len);
 
+
+String airQualityString = String(sgp.CO2) + "ppm";
+
+
   display.clearDisplay();
   display.setCursor(0, 0);
-  display.println(aq_char_array);
+  display.setTextSize(1);
+  display.print("CO2: ");
+  display.setTextSize(2);
+  display.print(String(sgp.CO2));
+  display.setTextSize(1);
+  display.println("ppm");
+  display.setTextSize(2);
   display.setCursor(0, 25);
   display.println(temp_char_array);
   display.setCursor(10, 45);
