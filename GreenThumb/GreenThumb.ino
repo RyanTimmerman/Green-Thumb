@@ -97,22 +97,14 @@ void loop() {
 
   updateDisplay(humid, tempC, cO2, tVOC);
 
-  // //If RH is lower than 85% trigger humidfier
-  // // if (humid < 85) {
-  // //   humidfy();
-  // // }
+  //If RH is lower than 85% trigger humidfier
+  if (humid < 85) {
+    humidfy();
+  }
 
-  // //every 60 loops (2mins x times humidifer triggered + 30 minutes)
-  // //Turn on the external fans for fresh air exchange
-  // // if (loopCtr >= 60) {
-  // //   exchangeFreshAir();
-  // //   loopCtr = 0;  // reset the counter
-  // // }
-
-  //  loopCtr++;  //add 1 to the counter
-
-  // // //wait 30 seconds before looping
-  // // delay(30000);
+  // if (cO2 > 1500) {
+  //   exchangeFreshAir();
+  // }
 
   delay(1000);
   loopCtr++;
@@ -142,37 +134,7 @@ void initializeTestSequence() {
 }
 
 void updateDisplay(int humidity, int tempC, int co2, int tvoc) {
-  
   int tempF = 1.8 * tempC + 32;
-  String tempString1 = "TEMP ";
-  String tempString2 = String(tempF);
-  String tempString3 = "F";
-
-  String finalTempString = tempString1 + tempString2 + tempString3;
-
-  String humidString = "RH: " + String(humidity) + "%";
-
-  Serial.println(finalTempString);
-  Serial.println(humidString);
-
-  // Serial.println("Temp:" + tempString + "    RH:" + humidString);  //+ airQualityString);
-
-
-  // int airQualityString_len = airQualityString.length() + 1; // Length (with one extra character for the null terminator)
-  // char aq_char_array[airQualityString_len];
-  // airQualityString.toCharArray(aq_char_array, airQualityString_len);
-
-  int tempString_len = finalTempString.length() + 1;  // Length (with one extra character for the null terminator)
-  char temp_char_array[tempString_len];
-  finalTempString.toCharArray(temp_char_array, tempString_len);
-
-  int humidString_len = humidString.length() + 1;  // Length (with one extra character for the null terminator)
-  char humid_char_array[humidString_len];
-  humidString.toCharArray(humid_char_array, humidString_len);
-
-
-String airQualityString = String(sgp.CO2) + "ppm";
-
 
   display.clearDisplay();
   display.setCursor(0, 0);
@@ -184,9 +146,13 @@ String airQualityString = String(sgp.CO2) + "ppm";
   display.println("ppm");
   display.setTextSize(2);
   display.setCursor(0, 25);
-  display.println(temp_char_array);
+  display.print("TEMP ");
+  display.print(String(tempF));
+  display.println("F");
   display.setCursor(10, 45);
-  display.println(humid_char_array);
+  display.print("RH: ");
+  display.print(String(humidity));
+  display.println("%");
   display.invertDisplay(true);
   display.display();
   delay(500);
