@@ -95,7 +95,7 @@ void loop() {
     exchangeFreshAir();
   }
 
-  delay(1000);
+  delay(5000);
 }
 
 
