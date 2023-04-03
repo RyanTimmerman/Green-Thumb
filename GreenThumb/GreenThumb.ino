@@ -1,6 +1,6 @@
 //***********************************************************************//
 //Name: Green Thumb
-//Version: 1.1.0
+//Version: 1.2.0
 //Author: Ryan Timmerman
 //Date: 12/22/2022
 //Description: This script is designed to automate an indoor plant biome.
@@ -29,9 +29,16 @@ DHT dht(DHTPIN, DHTTYPE);
 int loopCtr = 0;
 
 void setup() {
-  Serial.begin(115200);
   Wire.begin();
-  Wire.setClock(400000);
+  Serial.begin(115200);
+
+  pinMode(fanRelay, OUTPUT);
+  pinMode(humidifierRelay, OUTPUT);
+
+  digitalWrite(fanRelay, HIGH);         //turn relay off
+  digitalWrite(humidifierRelay, HIGH);  //turn relay off
+
+  dht.begin();  //Initialize humid/temp sensor
 
   if (sgp.begin() == false)  //Initialize co2 sensor
   {
@@ -42,14 +49,6 @@ void setup() {
   //Initializes sensor for air quality readings
   //measureAirQuality should be called in one second increments after a call to initAirQuality
   sgp.initAirQuality();
-
-  pinMode(fanRelay, OUTPUT);
-  pinMode(humidifierRelay, OUTPUT);
-
-  digitalWrite(fanRelay, HIGH);         //turn relay off
-  digitalWrite(humidifierRelay, HIGH);  //turn relay off
-
-  dht.begin();  //Initialize humid/temp sensor
 
   setupDisplay();
 
@@ -83,18 +82,6 @@ void loop() {
   float cO2 = sgp.CO2;
   float tVOC = sgp.TVOC;
 
-  // Serial.print("CO2: ");
-  // Serial.print(cO2);
-  // Serial.print(" ppm\tTVOC: ");
-  // Serial.print(tVOC);
-  // Serial.print(" ppb\t");
-  // Serial.print("RH: ");
-  // Serial.print(humid);
-  // Serial.print("TEMP: ");
-  // Serial.println(tempC);
-
-  delay(1000);
-
   updateDisplay(humid, tempC, cO2, tVOC);
 
   //If RH is lower than 85% trigger humidfier
@@ -102,9 +89,9 @@ void loop() {
     humidfy();
   }
 
-  // if (cO2 > 1500) {
-  //   exchangeFreshAir();
-  // }
+  if (cO2 > 1500) {
+    exchangeFreshAir();
+  }
 
   delay(1000);
   loopCtr++;
@@ -112,23 +99,21 @@ void loop() {
 
 
 void initializeTestSequence() {
-  // Serial.println("");
-  // Serial.println("*************************************************");
   Serial.println("Green Thumb 1.0 Starting..");
 
-  //turn fans on for 10 seconds
-  // Serial.println("testing fans..");
-  // digitalWrite(fanRelay, LOW);   //turn fan relay on
-  // delay(10000);                  //wait 10 seconds
-  // digitalWrite(fanRelay, HIGH);  //turn fan relay off
-  // delay(250);
+  //turn fans on for 3 seconds
+  Serial.println("testing fans..");
+  digitalWrite(fanRelay, LOW);   //turn fan relay on
+  delay(3000);                  //wait 10 seconds
+  digitalWrite(fanRelay, HIGH);  //turn fan relay off
+  delay(250);
 
-  // //turn humidifier on for 10 seconds
-  // Serial.println("testing humidifier..");
-  // digitalWrite(humidifierRelay, LOW);   //turn humidifer relay on
-  // delay(10000);                         //wait 10 seconds
-  // digitalWrite(humidifierRelay, HIGH);  //turn humidifer relay off
-  // delay(250);
+  // //turn humidifier on for 3 seconds
+  Serial.println("testing humidifier..");
+  digitalWrite(humidifierRelay, LOW);   //turn humidifer relay on
+  delay(3000);                         //wait 10 seconds
+  digitalWrite(humidifierRelay, HIGH);  //turn humidifer relay off
+  delay(250);
 
   delay(1000);
 }
@@ -166,12 +151,6 @@ void humidfy() {
   delay(120000);                        //wait 120 seconds (2mins)
   digitalWrite(humidifierRelay, HIGH);  //turn humidifer relay off
   delay(250);
-
-  // //turn the external fans on distrubute moisture evenly
-  // digitalWrite(fanRelay, LOW);   //turn fan relay on
-  // delay(10000);                  //wait 10 seconds
-  // digitalWrite(fanRelay, HIGH);  //turn fan relay off
-  // delay(250);
 }
 
 void exchangeFreshAir() {
