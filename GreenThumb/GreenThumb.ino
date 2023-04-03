@@ -6,6 +6,7 @@
 //Description: This script is designed to automate an indoor plant biome.
 //***********************************************************************//
 
+#include "SparkFun_SGP30_Arduino_Library.h"
 #include <Wire.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
@@ -16,18 +17,31 @@
 #define SCREEN_HEIGHT 64  // OLED display height, in pixels
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
 
-#define DHTPIN A0
+#define DHTPIN 7
 #define DHTTYPE DHT11
 
 #define humidifierRelay 2
 #define fanRelay 4
 
+SGP30 sgp;
+
 DHT dht(DHTPIN, DHTTYPE);
 int loopCtr = 0;
 
 void setup() {
-
   Serial.begin(115200);
+  Wire.begin();
+  Wire.setClock(400000);
+
+  if (sgp.begin() == false)  //Initialize co2 sensor
+  {
+    Serial.println("No SGP30 Detected. Check connections.");
+    while (1)
+      ;
+  }
+  //Initializes sensor for air quality readings
+  //measureAirQuality should be called in one second increments after a call to initAirQuality
+  sgp.initAirQuality();
 
   pinMode(fanRelay, OUTPUT);
   pinMode(humidifierRelay, OUTPUT);
@@ -35,9 +49,9 @@ void setup() {
   digitalWrite(fanRelay, HIGH);         //turn relay off
   digitalWrite(humidifierRelay, HIGH);  //turn relay off
 
-  setupDisplay();
+  dht.begin();  //Initialize humid/temp sensor
 
-  dht.begin();  //initiate humid/temp sensor
+  setupDisplay();
 
   initializeTestSequence();
 }
@@ -66,25 +80,40 @@ void loop() {
   float humid = dht.readHumidity();
   float tempC = dht.readTemperature();
 
+  sgp.measureAirQuality();
+  Serial.print("CO2: ");
+  Serial.print(sgp.CO2);
+  Serial.print(" ppm\tTVOC: ");
+  Serial.print(sgp.TVOC);
+  Serial.print(" ppb\t");
+  Serial.print("RH: ");
+  Serial.print(humid);
+  Serial.print("TEMP: ");
+  Serial.println(tempC);
+
   updateDisplay(humid, tempC);
 
-  //If RH is lower than 80% trigger humidfier
-  if (humid < 80) {
-    humidfy();
-  }
+  // //If RH is lower than 85% trigger humidfier
+  // // if (humid < 85) {
+  // //   humidfy();
+  // // }
 
-  //every 60 loops (2mins x times humidifer triggered + 30 minutes)
-  //Turn on the external fans for fresh air exchange
-  if (loopCtr >= 60) {
-    exchangeFreshAir();
-    loopCtr = 0;  // reset the counter
-  }
+  // //every 60 loops (2mins x times humidifer triggered + 30 minutes)
+  // //Turn on the external fans for fresh air exchange
+  // // if (loopCtr >= 60) {
+  // //   exchangeFreshAir();
+  // //   loopCtr = 0;  // reset the counter
+  // // }
 
-  loopCtr++;  //add 1 to the counter
+  //  loopCtr++;  //add 1 to the counter
 
-  //wait 30 seconds before looping
-  delay(30000);
+  // // //wait 30 seconds before looping
+  // // delay(30000);
+
+  delay(3000);
+  loopCtr++;
 }
+
 
 void initializeTestSequence() {
   Serial.println("");
@@ -93,23 +122,30 @@ void initializeTestSequence() {
 
   //turn fans on for 10 seconds
   Serial.println("testing fans..");
-  digitalWrite(fanRelay, LOW);   //turn fan relay on
-  delay(10000);                  //wait 10 seconds
-  digitalWrite(fanRelay, HIGH);  //turn fan relay off
-  delay(250);
+  // digitalWrite(fanRelay, LOW);   //turn fan relay on
+  // delay(10000);                  //wait 10 seconds
+  // digitalWrite(fanRelay, HIGH);  //turn fan relay off
+  // delay(250);
 
-  //turn humidifier on for 10 seconds
+  // //turn humidifier on for 10 seconds
   Serial.println("testing humidifier..");
-  digitalWrite(humidifierRelay, LOW);   //turn humidifer relay on
-  delay(10000);                         //wait 10 seconds
-  digitalWrite(humidifierRelay, HIGH);  //turn humidifer relay off
-  delay(250);
+  // digitalWrite(humidifierRelay, LOW);   //turn humidifer relay on
+  // delay(10000);                         //wait 10 seconds
+  // digitalWrite(humidifierRelay, HIGH);  //turn humidifer relay off
+  // delay(250);
+
+  delay(1000);
 }
 
 void updateDisplay(int humidity, int tempC) {
+  String airQualityString = "co2:" + String(sgp.CO2) + "ppm" + "   " + "voc:" + String(sgp.TVOC);
   String tempString = "TEMP " + String((int)(1.8 * tempC + 32)) + "F";
   String humidString = "RH: " + String(humidity) + "%";
-  Serial.println(tempString + "    " + humidString);
+  Serial.println("Temp:" + tempString + "    RH:" + humidString + "    aq:" + airQualityString);  //+ airQualityString);
+
+  int airQualityString_len = airQualityString.length() + 1; // Length (with one extra character for the null terminator)
+  char aq_char_array[airQualityString_len];
+  airQualityString.toCharArray(aq_char_array, airQualityString_len);
 
   int tempString_len = tempString.length() + 1;  // Length (with one extra character for the null terminator)
   char temp_char_array[tempString_len];
@@ -121,7 +157,7 @@ void updateDisplay(int humidity, int tempC) {
 
   display.clearDisplay();
   display.setCursor(0, 0);
-  display.println("GreenThumb");
+  display.println(aq_char_array);
   display.setCursor(0, 25);
   display.println(temp_char_array);
   display.setCursor(10, 45);
@@ -136,7 +172,7 @@ void updateDisplay(int humidity, int tempC) {
 void humidfy() {
   Serial.println("LOW HUMIDITY: Powering on humidifier..");
   digitalWrite(humidifierRelay, LOW);   //turn humidifer relay on
-  delay(120000);                         //wait 120 seconds (2mins)
+  delay(120000);                        //wait 120 seconds (2mins)
   digitalWrite(humidifierRelay, HIGH);  //turn humidifer relay off
   delay(250);
 
