@@ -26,7 +26,6 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
 SGP30 sgp;
 
 DHT dht(DHTPIN, DHTTYPE);
-int loopCtr = 0;
 
 void setup() {
   Wire.begin();
@@ -46,9 +45,7 @@ void setup() {
     while (1)
       ;
   }
-  //Initializes sensor for air quality readings
-  //measureAirQuality should be called in one second increments after a call to initAirQuality
-  sgp.initAirQuality();
+  sgp.initAirQuality(); //Initializes sensor for air quality readings
 
   setupDisplay();
 
@@ -56,9 +53,9 @@ void setup() {
 }
 
 void setupDisplay() {
-  if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {  // Address 0x3D for 128x64
+  if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {
     Serial.println(F("SSD1306 allocation failed"));
-    for (;;)
+    while (1)
       ;
   }
   delay(250);
@@ -68,57 +65,63 @@ void setupDisplay() {
   display.setTextSize(2);
   display.setCursor(0, 0);
   display.println("GreenThumb");
-  display.setCursor(0, 25);
+  display.setCursor(20, 25);
+  display.println("v1.2");
+  display.setCursor(0, 45);
   display.println("starting..");
   display.display();
 }
 
 
 void loop() {
-  sgp.measureAirQuality();
-
   float humid = dht.readHumidity();
   float tempC = dht.readTemperature();
   float cO2 = sgp.CO2;
-  float tVOC = sgp.TVOC;
 
-  updateDisplay(humid, tempC, cO2, tVOC);
+  double absHumidity = RHtoAbsolute(humid, tempC);//Convert relative humidity to absolute humidity
+  uint16_t sensHumidity = doubleToFixedPoint(absHumidity);
+  
+  sgp.setHumidity(sensHumidity); //Set humidity compensation on the SGP30
+  sgp.measureAirQuality();
 
-  //If RH is lower than 85% trigger humidfier
+  updateDisplay(humid, tempC, cO2);
+
   if (humid < 85) {
     humidfy();
+    delay(1000);
   }
 
-  if (cO2 > 1500) {
+  if (cO2 > 1800) {
     exchangeFreshAir();
   }
 
   delay(1000);
-  loopCtr++;
 }
 
 
 void initializeTestSequence() {
-  Serial.println("Green Thumb 1.0 Starting..");
+  Serial.println("Green Thumb 1.2 Starting..");
 
   //turn fans on for 3 seconds
-  Serial.println("testing fans..");
   digitalWrite(fanRelay, LOW);   //turn fan relay on
-  delay(3000);                  //wait 10 seconds
+  delay(3000);                   //wait 3 seconds
   digitalWrite(fanRelay, HIGH);  //turn fan relay off
   delay(250);
 
   // //turn humidifier on for 3 seconds
-  Serial.println("testing humidifier..");
   digitalWrite(humidifierRelay, LOW);   //turn humidifer relay on
-  delay(3000);                         //wait 10 seconds
+  delay(3000);                          //wait 3 seconds
   digitalWrite(humidifierRelay, HIGH);  //turn humidifer relay off
   delay(250);
 
-  delay(1000);
+  //the first 15 CO2 readings will be 400ppm
+  for (int i = 0; i < 15; i++) {
+    sgp.measureAirQuality();
+    delay(1000);
+  }
 }
 
-void updateDisplay(int humidity, int tempC, int co2, int tvoc) {
+void updateDisplay(int humidity, int tempC, int co2) {
   int tempF = 1.8 * tempC + 32;
 
   display.clearDisplay();
@@ -146,16 +149,27 @@ void updateDisplay(int humidity, int tempC, int co2, int tvoc) {
 }
 
 void humidfy() {
-  Serial.println("LOW HUMIDITY: Powering on humidifier..");
   digitalWrite(humidifierRelay, LOW);   //turn humidifer relay on
   delay(120000);                        //wait 120 seconds (2mins)
   digitalWrite(humidifierRelay, HIGH);  //turn humidifer relay off
-  delay(250);
 }
 
 void exchangeFreshAir() {
-  Serial.println("FRESH AIR: Power on fans..");
   digitalWrite(fanRelay, LOW);   //turn fan relay on
-  delay(60000);                  //wait 60 seconds
+  delay(15000);                  //wait 15 seconds
   digitalWrite(fanRelay, HIGH);  //turn fan relay off
+}
+
+double RHtoAbsolute(float relHumidity, float tempC) {
+  double eSat = 6.11 * pow(10.0, (7.5 * tempC / (237.7 + tempC)));
+  double vaporPressure = (relHumidity * eSat) / 100;                          //millibars
+  double absHumidity = 1000 * vaporPressure * 100 / ((tempC + 273) * 461.5);  //Ideal gas law with unit conversions
+  return absHumidity;
+}
+
+uint16_t doubleToFixedPoint(double number) {
+  int power = 1 << 8;
+  double number2 = number * power;
+  uint16_t value = floor(number2 + 0.5);
+  return value;
 }
