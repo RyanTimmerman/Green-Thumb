@@ -41,7 +41,7 @@ void setup() {
 
   if (sgp.begin() == false)  //Initialize co2 sensor
   {
-    Serial.println("No SGP30 Detected. Check connections.");
+    Serial.println(F("No SGP30 Detected. Check connections."));
     while (1)
       ;
   }
@@ -64,11 +64,11 @@ void setupDisplay() {
   display.setTextColor(WHITE);
   display.setTextSize(2);
   display.setCursor(0, 0);
-  display.println("GreenThumb");
+  display.println(F("GreenThumb"));
   display.setCursor(20, 25);
-  display.println("v1.2");
+  display.println(F("v1.2"));
   display.setCursor(0, 45);
-  display.println("starting..");
+  display.println(F("starting.."));
   display.display();
 }
 
@@ -91,7 +91,7 @@ void loop() {
     delay(1000);
   }
 
-  if (cO2 > 1800) {
+  if (cO2 > 1200) {
     exchangeFreshAir();
   }
 
@@ -121,26 +121,26 @@ void initializeTestSequence() {
   }
 }
 
-void updateDisplay(int humidity, int tempC, int co2) {
+void updateDisplay(const int& humidity, const int& tempC, const int& co2) {
   int tempF = 1.8 * tempC + 32;
 
   display.clearDisplay();
   display.setCursor(0, 0);
   display.setTextSize(1);
-  display.print("CO2: ");
+  display.print(F("CO2: "));
   display.setTextSize(2);
-  display.print(String(sgp.CO2));
+  display.print(String(co2));
   display.setTextSize(1);
-  display.println("ppm");
+  display.println(F("ppm"));
   display.setTextSize(2);
   display.setCursor(0, 25);
-  display.print("TEMP ");
+  display.print(F("TEMP "));
   display.print(String(tempF));
-  display.println("F");
+  display.println(F("F"));
   display.setCursor(10, 45);
-  display.print("RH: ");
+  display.print(F("RH: "));
   display.print(String(humidity));
-  display.println("%");
+  display.println(F("%"));
   display.invertDisplay(true);
   display.display();
   delay(500);
@@ -160,14 +160,14 @@ void exchangeFreshAir() {
   digitalWrite(fanRelay, HIGH);  //turn fan relay off
 }
 
-double RHtoAbsolute(float relHumidity, float tempC) {
+double RHtoAbsolute(const float& relHumidity, const float& tempC) {
   double eSat = 6.11 * pow(10.0, (7.5 * tempC / (237.7 + tempC)));
   double vaporPressure = (relHumidity * eSat) / 100;                          //millibars
   double absHumidity = 1000 * vaporPressure * 100 / ((tempC + 273) * 461.5);  //Ideal gas law with unit conversions
   return absHumidity;
 }
 
-uint16_t doubleToFixedPoint(double number) {
+uint16_t doubleToFixedPoint(const double& number) {
   int power = 1 << 8;
   double number2 = number * power;
   uint16_t value = floor(number2 + 0.5);
