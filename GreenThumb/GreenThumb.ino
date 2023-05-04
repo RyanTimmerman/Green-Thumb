@@ -76,13 +76,14 @@ void setupDisplay() {
 void loop() {
   float humid = dht.readHumidity();
   float tempC = dht.readTemperature();
-  float cO2 = sgp.CO2;
-
+  
   double absHumidity = RHtoAbsolute(humid, tempC);//Convert relative humidity to absolute humidity
   uint16_t sensHumidity = doubleToFixedPoint(absHumidity);
   
   sgp.setHumidity(sensHumidity); //Set humidity compensation on the SGP30
   sgp.measureAirQuality();
+
+  float cO2 = sgp.CO2;
 
   updateDisplay(humid, tempC, cO2);
 
