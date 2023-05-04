@@ -25,6 +25,8 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
 
 SGP30 sgp;
 
+uint16_t loopCtr;
+
 DHT dht(DHTPIN, DHTTYPE);
 
 void setup() {
@@ -77,10 +79,18 @@ void loop() {
   float humid = dht.readHumidity();
   float tempC = dht.readTemperature();
   
-  double absHumidity = RHtoAbsolute(humid, tempC);//Convert relative humidity to absolute humidity
-  uint16_t sensHumidity = doubleToFixedPoint(absHumidity);
+  //Every 60 loops update the SGP sensor's humidity value
+  if(loopCtr > 59)
+  {
+    double absHumidity = RHtoAbsolute(humid, tempC);//Convert relative humidity to absolute humidity
+    uint16_t sensHumidity = doubleToFixedPoint(absHumidity);
   
-  sgp.setHumidity(sensHumidity); //Set humidity compensation on the SGP30
+    sgp.setHumidity(sensHumidity); //Set humidity compensation on the SGP30
+
+    warmUpSgp();
+    loopCtr = 0;
+  }
+
   sgp.measureAirQuality();
 
   float cO2 = sgp.CO2;
@@ -89,7 +99,6 @@ void loop() {
 
   if (humid < 85) {
     humidfy();
-    delay(1000);
   }
 
   if (cO2 > 1200) {
@@ -97,6 +106,7 @@ void loop() {
   }
 
   delay(5000);
+  loopCtr++;
 }
 
 
@@ -115,6 +125,10 @@ void initializeTestSequence() {
   digitalWrite(humidifierRelay, HIGH);  //turn humidifer relay off
   delay(250);
 
+  warmUpSgp();
+}
+
+void warmUpSgp(){
   //the first 15 CO2 readings will be 400ppm
   for (int i = 0; i < 15; i++) {
     sgp.measureAirQuality();
@@ -153,12 +167,14 @@ void humidfy() {
   digitalWrite(humidifierRelay, LOW);   //turn humidifer relay on
   delay(120000);                        //wait 120 seconds (2mins)
   digitalWrite(humidifierRelay, HIGH);  //turn humidifer relay off
+  delay(500);
 }
 
 void exchangeFreshAir() {
   digitalWrite(fanRelay, LOW);   //turn fan relay on
   delay(15000);                  //wait 15 seconds
   digitalWrite(fanRelay, HIGH);  //turn fan relay off
+  delay(500);
 }
 
 double RHtoAbsolute(const float& relHumidity, const float& tempC) {
