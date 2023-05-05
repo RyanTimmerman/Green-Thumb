@@ -15,7 +15,7 @@
 // Declaration for an SSD1306 display connected to I2C (SDA, SCL pins)
 #define SCREEN_WIDTH 128  // OLED display width, in pixels
 #define SCREEN_HEIGHT 64  // OLED display height, in pixels
-Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
+
 
 #define DHTPIN 7
 #define DHTTYPE DHT11
@@ -23,11 +23,10 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
 #define humidifierRelay 2
 #define fanRelay 4
 
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
 SGP30 sgp;
-
-uint16_t loopCtr;
-
 DHT dht(DHTPIN, DHTTYPE);
+uint8_t loopCtr;
 
 void setup() {
   Wire.begin();
@@ -47,11 +46,57 @@ void setup() {
     while (1)
       ;
   }
-  sgp.initAirQuality(); //Initializes sensor for air quality readings
+  sgp.initAirQuality();  //Initializes sensor for air quality readings
 
   setupDisplay();
 
   initializeTestSequence();
+}
+
+void initializeTestSequence() {
+  Serial.println("Green Thumb 1.2 Starting..");
+
+  //turn fans on for 3 seconds
+  digitalWrite(fanRelay, LOW);   //turn fan relay on
+  delay(3000);                   //wait 3 seconds
+  digitalWrite(fanRelay, HIGH);  //turn fan relay off
+  delay(250);
+
+  // //turn humidifier on for 3 seconds
+  digitalWrite(humidifierRelay, LOW);   //turn humidifer relay on
+  delay(3000);                          //wait 3 seconds
+  digitalWrite(humidifierRelay, HIGH);  //turn humidifer relay off
+  delay(250);
+
+  updateSgpHumidity();
+}
+
+void loop() {
+  float humid = dht.readHumidity();
+  float tempC = dht.readTemperature();
+
+  //Every 60 loops update the SGP sensor's humidity value
+  if (loopCtr > 59) {
+    updateSgpHumidity();
+    loopCtr = 0;
+  }
+
+  sgp.measureAirQuality();
+
+  float cO2 = sgp.CO2;
+
+  updateDisplay(humid, tempC, cO2);
+
+  if (humid < 85) {
+    humidfy();
+  }
+
+  if (cO2 > 1200) {
+    exchangeFreshAir();
+  }
+
+  delay(5000);
+  loopCtr++;
 }
 
 void setupDisplay() {
@@ -74,61 +119,15 @@ void setupDisplay() {
   display.display();
 }
 
-
-void loop() {
+void updateSgpHumidity() {
   float humid = dht.readHumidity();
   float tempC = dht.readTemperature();
-  
-  //Every 60 loops update the SGP sensor's humidity value
-  if(loopCtr > 59)
-  {
-    double absHumidity = RHtoAbsolute(humid, tempC);//Convert relative humidity to absolute humidity
-    uint16_t sensHumidity = doubleToFixedPoint(absHumidity);
-  
-    sgp.setHumidity(sensHumidity); //Set humidity compensation on the SGP30
 
-    warmUpSgp();
-    loopCtr = 0;
-  }
+  double absHumidity = RHtoAbsolute(humid, tempC);  //Convert relative humidity to absolute humidity
+  uint16_t sensHumidity = doubleToFixedPoint(absHumidity);
 
-  sgp.measureAirQuality();
+  sgp.setHumidity(sensHumidity);  //Set humidity compensation on the SGP30
 
-  float cO2 = sgp.CO2;
-
-  updateDisplay(humid, tempC, cO2);
-
-  if (humid < 85) {
-    humidfy();
-  }
-
-  if (cO2 > 1200) {
-    exchangeFreshAir();
-  }
-
-  delay(5000);
-  loopCtr++;
-}
-
-
-void initializeTestSequence() {
-  Serial.println("Green Thumb 1.2 Starting..");
-
-  //turn fans on for 3 seconds
-  digitalWrite(fanRelay, LOW);   //turn fan relay on
-  delay(3000);                   //wait 3 seconds
-  digitalWrite(fanRelay, HIGH);  //turn fan relay off
-  delay(250);
-
-  // //turn humidifier on for 3 seconds
-  digitalWrite(humidifierRelay, LOW);   //turn humidifer relay on
-  delay(3000);                          //wait 3 seconds
-  digitalWrite(humidifierRelay, HIGH);  //turn humidifer relay off
-  delay(250);
-
-  warmUpSgp();
-}
-
-void warmUpSgp(){
   //the first 15 CO2 readings will be 400ppm
   for (int i = 0; i < 15; i++) {
     sgp.measureAirQuality();
