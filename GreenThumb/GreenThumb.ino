@@ -39,6 +39,7 @@ void setup() {
   digitalWrite(humidifierRelay, HIGH);  //turn relay off
 
   dht.begin();  //Initialize humid/temp sensor
+  delay(500);
 
   if (sgp.begin() == false)  //Initialize co2 sensor
   {
@@ -46,11 +47,15 @@ void setup() {
     while (1)
       ;
   }
-  sgp.initAirQuality();  //Initializes sensor for air quality readings
 
+  sgp.initAirQuality();  //Initializes sensor for air quality readings
+  delay(500);
+  
   setupDisplay();
+  delay(500);
 
   initializeTestSequence();
+  delay(500);
 }
 
 void initializeTestSequence() {
@@ -82,8 +87,10 @@ void loop() {
   }
 
   sgp.measureAirQuality();
+  delay(500);
 
   float cO2 = sgp.CO2;
+  
 
   updateDisplay(humid, tempC, cO2);
 
@@ -127,6 +134,7 @@ void updateSgpHumidity() {
   uint16_t sensHumidity = doubleToFixedPoint(absHumidity);
 
   sgp.setHumidity(sensHumidity);  //Set humidity compensation on the SGP30
+  delay(500);
 
   //the first 15 CO2 readings will be 400ppm
   for (int i = 0; i < 15; i++) {
@@ -145,7 +153,8 @@ void updateDisplay(const int& humidity, const int& tempC, const int& co2) {
   display.setTextSize(2);
   display.print(String(co2));
   display.setTextSize(1);
-  display.println(F("ppm"));
+  display.print(F("ppm  "));
+  display.println(String(loopCtr));
   display.setTextSize(2);
   display.setCursor(0, 25);
   display.print(F("TEMP "));
@@ -171,7 +180,7 @@ void humidfy() {
 
 void exchangeFreshAir() {
   digitalWrite(fanRelay, LOW);   //turn fan relay on
-  delay(15000);                  //wait 15 seconds
+  delay(60000);                  //wait 60 seconds
   digitalWrite(fanRelay, HIGH);  //turn fan relay off
   delay(500);
 }
